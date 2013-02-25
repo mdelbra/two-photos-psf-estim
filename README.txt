@@ -19,8 +19,7 @@ same scene, from different distances leading to different geometric zooms,
 and then estimating the kernel blur between them. 
 
 [1] "Subpixel Point Spread Function Estimation from Two Photographs at 
- Different Distances"
- M. Delbracio, A. Almansa, J.-M. Morel and P. Muse
+ Different Distances"  M. Delbracio, A. Almansa, J.-M. Morel and P. Muse
  SIAM Journal on Imaging Sciences (SIIMS), November 2012.
  DOI: 10.1137/110848335
 
@@ -56,8 +55,7 @@ compilation and execution.
 
 
 [2] "Automatic Homographic Registration of a Pair of Images, with A 
- Contrario Elimination of Outliers"
- L. Moisan, P. Moulon, P. Monasse
+ Contrario Elimination of Outliers" L. Moisan, P. Moulon, P. Monasse
  Image Processing On Line, 2012 
  DOI: 10.5201/ipol.2012.mmm-oh
 
