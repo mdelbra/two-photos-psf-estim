@@ -27,6 +27,9 @@ and then estimating the kernel blur between them.
  Files
  -----
  Makefile
+ doxygen.config
+ VERSION
+ COPYING
  README.txt
  ls.c
  ls.h
@@ -80,7 +83,7 @@ Options:
    -o <file>     Estimated PSF save to a 8bits PGM image
    -i <file>     Estimated inter-image kernel save to a 8bits PGM image
    -d <file>     Save all the intermediate images in files with prefix <file>
-   -t            Threshold negative values to zero
+   -t            1 - Threshold negative values to zero (0-default)
 
 Parameter Explanation
 
