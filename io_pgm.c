@@ -42,14 +42,6 @@
 #define TRUE 1
 #endif /* !TRUE */
 
-/*----------------------------------------------------------------------------*/
-/** Fatal error, print a message to standard-error output and exit.
- */
-static void error(const char * msg)
-{
-	fprintf(stderr,"%s\n",msg);
-	exit(EXIT_FAILURE);
-}
 
 /*----------------------------------------------------------------------------*/
 /** Fatal error, print a message and corresponding filename to standard-error
@@ -105,115 +97,118 @@ static unsigned int get_num(FILE * f)
 }
 
 
-/*----------------------------------------------------------------------------*/
-/** Read a PGM file into an array of floats.
+/*---------------------------------------------------------------------------*/
+/** Read a PGM 8/16 Bits image file into an array of floats.
  */
-
-
 float *read_pgm_float(const char * fname, int * ncol, int *nrow)
 {
-	FILE * f;
-	int c,bin;
-	int depth,i,j;
-	float * data;
-	
-	/* open file */
-	f = fopen(fname,"rb");
-	if( f == NULL ) errorf("Error: unable to open input image file ",fname);
-	
-	/* read header */
-	if( getc(f) != 'P' ) errorf("Error: not a PGM file ",fname);
-	if( (c=getc(f)) == '2' ) bin = FALSE;
-	else if( c == '5' ) bin = TRUE;
-	else errorf("Error: not a PGM file ",fname);
-	skip_whites_and_comments(f);
-	*ncol = get_num(f);            /* X size */
-	skip_whites_and_comments(f);
-	*nrow = get_num(f);            /* Y size */
-	skip_whites_and_comments(f);
-	depth = get_num(f);            /* depth */
-	if(depth==0) fprintf(stderr,"Warning: depth=0, probably invalid PGM file\n");
-	/* white before data */
-	if(!isspace(c=getc(f))) errorf("Error: corrupted PGM file ",fname);
-	
-	/* get memory */
-	data = (float *) calloc((*ncol) * (*nrow), sizeof(float));
+    FILE * f;
+    int c,bin;
+    int depth,i,j;
+    float * data;
+    
+    /* open file */
+    f = fopen(fname,"rb");
+    if( f == NULL ) errorf("Error: unable to open input image file ",fname);
+    
+    /* read header */
+    if( getc(f) != 'P' ) errorf("Error: not a PGM file ",fname);
+    if( (c=getc(f)) == '2' ) bin = FALSE;
+    else if( c == '5' ) bin = TRUE;
+    else errorf("Error: not a PGM file ",fname);
+    skip_whites_and_comments(f);
+    *ncol = get_num(f);            /* X size */
+    skip_whites_and_comments(f);
+    *nrow = get_num(f);            /* Y size */
+    skip_whites_and_comments(f);
+    depth = get_num(f);            /* depth */
+    if(depth==0) fprintf(stderr,
+                         "Warning: depth=0, probably invalid PGM file\n");
+    /* white before data */
+    if(!isspace(c=getc(f))) errorf("Error: corrupted PGM file ",fname);
+    
+    /* get memory */
+    data = (float *) calloc((*ncol) * (*nrow), sizeof(float));
     if (data == NULL)
-		error("not enough memory.");
-	
-	/* read data */
-	
-	/*If the depth is less than 256, it is 1 byte. Otherwise, it is 2 bytes*/
-	if(depth<256)
-	{
-		for(i=0;i<*nrow;i++)
-			for(j=0;j<*ncol;j++)
-				data[ j + i * (*ncol)] = bin ? (float) getc(f) : (float) get_num(f);
-	}
-	/*16 bits PGM Most significant byte first
-	 * see http://netpbm.sourceforge.net/doc/pgm.html
-	 */
-	else {
-		for(i=0;i<*nrow;i++)
-			for(j=0;j<*ncol;j++)
-				/*most significant byte first*/
-				data[ j + i * (*ncol) ] = bin ? ((float) getc(f)*256) + (float)getc(f) : (float) get_num(f);
-		
-	}
-
-	/* close file if needed */
-	if( f != stdin && fclose(f) == EOF )
-		errorf("Error: unable to close file while reading PGM file ",fname);
-	
-	return data;
+        error("not enough memory.");
+    
+    /* read data */
+    
+    /*If the depth is less than 256, it is 1 byte. Otherwise, it is 2 bytes*/
+    if(depth<256)
+    {
+        for(i=0;i<*nrow;i++)
+            for(j=0;j<*ncol;j++)
+                data[ j + i * (*ncol)] = bin ?
+                (float) getc(f) : (float) get_num(f);
+    }
+    /*16 bits PGM Most significant byte first
+     * see http://netpbm.sourceforge.net/doc/pgm.html
+     */
+    else {
+        for(i=0;i<*nrow;i++)
+            for(j=0;j<*ncol;j++)
+            /*most significant byte first*/
+                data[ j + i * (*ncol) ] = bin ? ((float) getc(f)*256) +
+                (float)getc(f) : (float) get_num(f);
+        
+    }
+    
+    /* close file if needed */
+    if( f != stdin && fclose(f) == EOF )
+        errorf("Error: unable to close file while reading PGM file ",fname);
+    
+    return data;
 }
 
-/*----------------------------------------------------------------------------*/
+/*---------------------------------------------------------------------------*/
 /** Write an array of floats into a PGM file.
  */
 void write_pgm_float(const char *fname, const float *data, int ncol, int nrow)
 {
-	FILE * f;
-	int i,j,n;
-	int v,max,min;
-	
-	/* check min and max values */
-	max = min = 0;
-	for(i=0; i< nrow; i++)
-		for(j=0; j<ncol; j++)
-		{
-			v = (int) data[ j + i * ncol];
-			if( v > max ) max = v;
-			if( v < min ) min = v;
-		}
-	
-	if( min < 0 ) fprintf(stderr,
-						  "Warning: write_pgm_image_int: negative values in '%s'.\n",fname);
-	if( max > 255 ) fprintf(stderr,
-						  "Warning: write_pgm_image_int: values exceeding 255 in '%s'.\n",fname);
-	
-	/* open file */
-	if( strcmp(fname,"-") == 0 ) f = stdout;
-	else f = fopen(fname,"w");
-	if( f == NULL ) errorf("Error: unable to open output image file ",fname);
-	
-	/* write header */
-	fprintf(f,"P5\n");
-	fprintf(f,"%u %u\n",ncol,nrow);
-	fprintf(f,"%d\n",255);
-	
-	/* write data */
-	for(n=0,i=0; i<nrow; i++)
-		for(j=0; j<ncol; j++)
-			fputc((unsigned char) data[j+i*ncol],f);
-	
-	/* close file if needed */
-	if( f != stdout && fclose(f) == EOF )
-		errorf("Error: unable to close file while writing PGM file ",fname);
+    FILE * f;
+    int i,j;
+    int v,max,min;
+    
+    /* check min and max values */
+    max = min = 0;
+    for(i=0; i< nrow; i++)
+        for(j=0; j<ncol; j++)
+        {
+            v = (int) data[ j + i * ncol];
+            if( v > max ) max = v;
+            if( v < min ) min = v;
+        }
+    
+    if( min < 0 ) fprintf(stderr,
+                          "Warning: negative values in '%s'.\n",
+                          fname);
+    if( max > 255 ) fprintf(stderr,
+                            "Warning: values exceeding 255 in '%s'.\n",
+                            fname);
+    
+    /* open file */
+    if( strcmp(fname,"-") == 0 ) f = stdout;
+    else f = fopen(fname,"w");
+    if( f == NULL ) errorf("Error: unable to open output image file ",fname);
+    
+    /* write header */
+    fprintf(f,"P5\n");
+    fprintf(f,"%u %u\n",ncol,nrow);
+    fprintf(f,"%d\n",255);
+    
+    /* write data */
+    for(i=0; i<nrow; i++)
+        for(j=0; j<ncol; j++)
+            fputc((unsigned char) data[j+i*ncol],f);
+    
+    /* close file if needed */
+    if( f != stdout && fclose(f) == EOF )
+        errorf("Error: unable to close file while writing PGM file ",fname);
 }
 
 /*----------------------------------------------------------------------------*/
-/** Write an array of floats into a 8bit PGM file. Normalize the maximum value of
+/** Write an array of floats into a 8bit PGM file. Normalize the max value of
  the floats array to be 255. 
  */
 void write_pgm_normalize_given_minmax_float(const char *fname, 
@@ -225,7 +220,9 @@ void write_pgm_normalize_given_minmax_float(const char *fname,
 	int i,j;
 	
 	if(max==min)
-		errorf("Error: unable to normalize to max and min values. They are equal", fname);
+		errorf(
+        "Error: unable to normalize to max and min values. They are equal",
+               fname);
 	
 	/* open file */
 	if( strcmp(fname,"-") == 0 ) f = stdout;
@@ -241,7 +238,8 @@ void write_pgm_normalize_given_minmax_float(const char *fname,
 	for(i=0; i<nrow; i++)
 		for(j=0; j<ncol; j++)
 		{
-			fputc((unsigned char) (data[j+i*ncol]-min>0) ? 255.0/(max-min)*(data[j+i*ncol]-min) : 0 ,f);
+			fputc((unsigned char) (data[j+i*ncol]-min>0) ?
+                  255.0/(max-min)*(data[j+i*ncol]-min) : 0 ,f);
 		}
 	/* close file if needed */
 	if( f != stdout && fclose(f) == EOF )
@@ -249,154 +247,125 @@ void write_pgm_normalize_given_minmax_float(const char *fname,
 }
 
 
-/*----------------------------------------------------------------------------*/
-/** Write an array of floats into a 8bit PGM file. Normalize the maximum value of
- the floats array to be 255. 
+/*---------------------------------------------------------------------------*/
+/** Write an array of floats into a 8bit PGM file.
+ *    Normalize the maximum value of
+ *  the floats array to be 255.
  */
-void write_pgm_normalize_float(const char *fname, const float *data, int ncol, int nrow)
+void write_pgm_normalize_float(const char *fname, const float *data,
+                               int ncol, int nrow)
 {
-	FILE * f;
-	int i,j;
-	float v,max,min;
-	
-	/* check min and max values. If min is big than zero keep zero as min*/
-	max = min = 0;
-	for(i=0; i< nrow; i++)
-		for(j=0; j<ncol; j++)
-		{
-			v = data[ j + i * ncol];
-			if( v > max ) max = v;
-			if( v < min ) min = v;
-		}
-	
-	if( min < 0 ) fprintf(stderr,
-						  "Warning: write_pgm_normalize_float: negative values in '%s' are truncated to zero.\n",fname);
-	
-	/* open file */
-	if( strcmp(fname,"-") == 0 ) f = stdout;
-	else f = fopen(fname,"w");
-	if( f == NULL ) errorf("Error: unable to open output image file ",fname);
-	
-	/* write header */
-	fprintf(f,"P5\n");
-	fprintf(f,"%u %u\n",ncol,nrow);
-	fprintf(f,"%d\n",255);
-	
-	/* write data */
-	for(i=0; i<nrow; i++)
-		for(j=0; j<ncol; j++)
-			fputc((unsigned char) (data[j+i*ncol]>0) ? 255.0/max*data[j+i*ncol] : 0 ,f);
-	
-	/* close file if needed */
-	if( f != stdout && fclose(f) == EOF )
-		errorf("Error: unable to close file while writing PGM file ",fname);
+    FILE * f;
+    int i,j;
+    float v,max,min;
+    
+    /* check min and max values. If min is big than zero keep zero as min*/
+    max = min = 0;
+    for(i=0; i< nrow; i++)
+        for(j=0; j<ncol; j++)
+        {
+            v = data[ j + i * ncol];
+            if( v > max ) max = v;
+            if( v < min ) min = v;
+        }
+    
+    if( min < 0 ) fprintf(stderr,
+        "Warning: negative values in '%s' are truncated to zero.\n",fname);
+    
+    /* open file */
+    if( strcmp(fname,"-") == 0 ) f = stdout;
+    else f = fopen(fname,"w");
+    if( f == NULL ) errorf("Error: unable to open output image file ",fname);
+    
+    /* write header */
+    fprintf(f,"P5\n");
+    fprintf(f,"%u %u\n",ncol,nrow);
+    fprintf(f,"%d\n",255);
+    
+    /* write data */
+    for(i=0; i<nrow; i++)
+        for(j=0; j<ncol; j++)
+            fputc((unsigned char) (data[j+i*ncol]>0)
+                  ? 255.0/max*data[j+i*ncol] : 0 ,f);
+    
+    /* close file if needed */
+    if( f != stdout && fclose(f) == EOF )
+        errorf("Error: unable to close file while writing PGM file ",fname);
 }
 
-void write_pgm_lognormalize_float(const char *fname, const float *data, int ncol, int nrow)
-{
-	FILE * f;
-	int i,j;
-	float v,max,min;
-	
-	/* check min and max values. If min is big than zero keep zero as min*/
-	max = min = 0;
-	for(i=0; i< nrow; i++)
-		for(j=0; j<ncol; j++)
-		{
-			v = data[ j + i * ncol];
-			if( v > max ) max = v;
-			if( v < min ) min = v;
-		}
-	
-	if( min < 0 ) fprintf(stderr,
-						  "Warning: write_pgm_normalize_float: negative values in '%s' are truncated to zero.\n",fname);
-	
-	/* open file */
-	if( strcmp(fname,"-") == 0 ) f = stdout;
-	else f = fopen(fname,"w");
-	if( f == NULL ) errorf("Error: unable to open output image file ",fname);
-	
-	/* write header */
-	fprintf(f,"P5\n");
-	fprintf(f,"%u %u\n",ncol,nrow);
-	fprintf(f,"%d\n",255);
-	
-	/* write data */
-	for(i=0; i<nrow; i++)
-		for(j=0; j<ncol; j++)
-			fputc((unsigned char) (log(abs(data[j+i*ncol]))>0) ? 255.0/log(max) * log(abs(data[j+i*ncol])) : 0 ,f);
-	
-	/* close file if needed */
-	if( f != stdout && fclose(f) == EOF )
-		errorf("Error: unable to close file while writing PGM file ",fname);
-}
 
-/*----------------------------------------------------------------------------*/
-/** Write an array of floats into a 3channel-8bit PPM image file. Normalize the 
- maximum value of the floats array to be 255. 
+
+/*---------------------------------------------------------------------------*/
+/** Write an array of floats into a 3channel-8bit PPM image file. Normalize
+ *   the maximum value of the floats array to be 255.
  */
-void write_ppm_normalize_float(const char *fname, const float *rdata, const float *gdata,
-							   const float *bdata, int ncol, int nrow)
+void write_ppm_normalize_float(const char *fname, const float *rdata,
+                               const float *gdata, const float *bdata,
+                               int ncol, int nrow)
 {
-	FILE * f;
-	int i,j;
-	float v,max,min;
-	
-	/* check global min and max values in r,g,b channels. If min is big than zero keep zero as min*/
-	max = min = 0;
-	
-	/*r*/
-	for(i=0; i< nrow; i++)
-		for(j=0; j<ncol; j++)
-		{
-			v = rdata[ j + i * ncol];
-			if( v > max ) max = v;
-			if( v < min ) min = v;
-		}
-
-	/*g*/
-	for(i=0; i< nrow; i++)
-		for(j=0; j<ncol; j++)
-		{
-			v = gdata[ j + i * ncol];
-			if( v > max ) max = v;
-			if( v < min ) min = v;
-		}
-
-	/*b*/
-	for(i=0; i< nrow; i++)
-		for(j=0; j<ncol; j++)
-		{
-			v = bdata[ j + i * ncol];
-			if( v > max ) max = v;
-			if( v < min ) min = v;
-		}
-	
-	if( min < 0 ) fprintf(stderr,
-						  "Warning: write_pgm_normalize_float: negative values in '%s' are truncated to zero.\n",fname);
-	
-	/* open file */
-	if( strcmp(fname,"-") == 0 ) f = stdout;
-	else f = fopen(fname,"w");
-	if( f == NULL ) errorf("Error: unable to open output image file ",fname);
-	
-	/* write header */
-	fprintf(f,"P6\n");
-	fprintf(f,"%u %u\n",ncol,nrow);
-	fprintf(f,"%d\n",255);
-	
-	/* write data */
-	for(i=0; i<nrow; i++)
-		for(j=0; j<ncol; j++)
-		{
-			static unsigned char color[3];
-			color[0] = (rdata[j+i*ncol]>0) ? 255.0/max*rdata[j+i*ncol] : 0;  /* red */
-			color[1] = (gdata[j+i*ncol]>0) ? 255.0/max*gdata[j+i*ncol] : 0;  /* green */
-			color[2] = (bdata[j+i*ncol]>0) ? 255.0/max*bdata[j+i*ncol] : 0;  /* blue */
-			(void) fwrite(color, 1, 3, f);
-		}
-	/* close file if needed */
-	if( f != stdout && fclose(f) == EOF )
-		errorf("Error: unable to close file while writing PPM file ",fname);
+    FILE * f;
+    int i,j;
+    float v,max,min;
+    
+    /* check global min and max values in r,g,b channels. If min is big than
+     *zero keep zero as min*/
+    max = min = 0;
+    
+    /*r*/
+    for(i=0; i< nrow; i++)
+        for(j=0; j<ncol; j++)
+        {
+            v = rdata[ j + i * ncol];
+            if( v > max ) max = v;
+            if( v < min ) min = v;
+        }
+    
+    /*g*/
+    for(i=0; i< nrow; i++)
+        for(j=0; j<ncol; j++)
+        {
+            v = gdata[ j + i * ncol];
+            if( v > max ) max = v;
+            if( v < min ) min = v;
+        }
+    
+    /*b*/
+    for(i=0; i< nrow; i++)
+        for(j=0; j<ncol; j++)
+        {
+            v = bdata[ j + i * ncol];
+            if( v > max ) max = v;
+            if( v < min ) min = v;
+        }
+    
+    if( min < 0 ) fprintf(stderr,
+                "Warning: negative values in '%s' are truncated to zero.\n",
+                fname);
+    
+    /* open file */
+    if( strcmp(fname,"-") == 0 ) f = stdout;
+    else f = fopen(fname,"w");
+    if( f == NULL ) errorf("Error: unable to open output image file ",fname);
+    
+    /* write header */
+    fprintf(f,"P6\n");
+    fprintf(f,"%u %u\n",ncol,nrow);
+    fprintf(f,"%d\n",255);
+    
+    /* write data */
+    for(i=0; i<nrow; i++)
+        for(j=0; j<ncol; j++)
+        {
+            static unsigned char color[3];
+            /*red*/
+            color[0] =(rdata[j+i*ncol]>0)? 255.0/max*rdata[j+i*ncol]:0;
+            /*green*/
+            color[1] =(gdata[j+i*ncol]>0)? 255.0/max*gdata[j+i*ncol]:0;
+            /*blue*/
+            color[2] =(bdata[j+i*ncol]>0)? 255.0/max*bdata[j+i*ncol]:0;
+            (void) fwrite(color, 1, 3, f);
+        }
+    /* close file if needed */
+    if( f != stdout && fclose(f) == EOF )
+        errorf("Error: unable to close file while writing PPM file ",fname);
 }
-

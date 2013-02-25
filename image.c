@@ -1,3 +1,25 @@
+/*----------------------------------------------------------------------------
+ 
+ "Recovering the Subpixel PSF from Two Photographs at Different Distances"
+ 
+ Copyright 2013 mauricio delbracio (mdelbra@gmail.com)
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Affero General Public License as
+ published by the Free Software Foundation, either version 3 of the
+ License, or (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU Affero General Public License for more details.
+ 
+ You should have received a copy of the GNU Affero General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ 
+ ----------------------------------------------------------------------------*/
+
+
 
 /**
  * @file image.c
@@ -11,29 +33,22 @@
 #include <fftw3.h>
 #include <math.h>
 #include <float.h>
+#include <limits.h>
 #include "image.h"
 
 
+
+#define min(a,b)        (((a)>(b)) ? (b) : (a))
+#define max(a,b)        (((a)>(b)) ? (a) : (b))
+
+
 /** @brief Error/Exit print a message and exit.
- *  @param msg 
+ *  @param msg
  */
-static void error(char *msg)
+ void error(char *msg)
 {
     fprintf(stderr, "PSF_ESTIM Error: %s\n", msg);
     exit(EXIT_FAILURE);
-}
-
-
-/** @brief Euclidean distance between two points.
- *  @param x1 
- *  @param y1
- *  @param x2
- *  @param y2
- *  @return distance between point (x1,y1) and (x2,y2)
- */
-float dist_l2(float x1, float y1, float x2, float y2)
-{
-    return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
 
@@ -44,7 +59,7 @@ float dist_l2(float x1, float y1, float x2, float y2)
 void free_imageFloat(ImageFloat i)
 {
     if (i == NULL || i->val == NULL)
-	error("free_image_float: invalid input image.");
+    error("free_image_float: invalid input image.");
     free((void *) i->val);
     free((void *) i);
 }
@@ -52,7 +67,7 @@ void free_imageFloat(ImageFloat i)
 /**
  * @brief Create new ImageFloat of size 'nrow' x 'ncol'
  * @param ncol - number of columns
- * @param nrow - number of rows 
+ * @param nrow - number of rows
  * @return created ImageFloat
  */
 ImageFloat new_imageFloat(int ncol, int nrow)
@@ -60,14 +75,14 @@ ImageFloat new_imageFloat(int ncol, int nrow)
     ImageFloat image;
 
     if (ncol == 0 || nrow == 0)
-	error("new_image_float: invalid image size.");
+    error("new_image_float: invalid image size.");
 
     image = (ImageFloat) malloc(sizeof(struct imageFloatStruct));
     if (image == NULL)
-	error("not enough memory.");
+    error("not enough memory.");
     image->val = (float *) calloc(ncol * nrow, sizeof(float));
     if (image->val == NULL)
-	error("not enough memory.");
+    error("not enough memory.");
 
     image->ncol = ncol;
     image->nrow = nrow;
@@ -79,15 +94,15 @@ ImageFloat new_imageFloat(int ncol, int nrow)
 
 /**
  * @brief Separable full convolution between an ImageFloat and a kernel
- * @param in - number of columns
- * @param xker - horizontal kernel (array of floats) 
+ * @param in - Input Image Float
+ * @param xker - horizontal kernel (array of floats)
  * @param xsize - length of horizontal kernel
  * @param yker - vertical kernel (array of floats)
  * @param ysize - length of vertical kernel
  * @return convolved ImageFloat
  */
 ImageFloat convol_sep2(ImageFloat in, float *xker, int xsize, float *yker,
-		       int ysize)
+                       int ysize)
 {
     ImageFloat aux, out;
     int N, M, n, m, q;
@@ -100,37 +115,41 @@ ImageFloat convol_sep2(ImageFloat in, float *xker, int xsize, float *yker,
     aux = new_imageFloat(N, in->nrow);
     out = new_imageFloat(N, M);
 
-	/*convolution boundry value: 0 */
-	
-    /* First subsampling: x axis */
-    for (n = 0; n < aux->ncol; n++) {
-	for (m = 0; m < aux->nrow; m++) {
-	    sum = 0.0;
-	    for (q = 0; q < xsize; q++) {
-		h = n - q;
-		/* null boundary condition */
-		if (h >= 0 && h < in->ncol)
-		    sum += in->val[h + m * in->ncol] * xker[q];
-	    }
-	    aux->val[n + m * aux->ncol] = sum;
-	}
+    /*convolution boundry value: 0 */
+
+    /* First sampling: x axis */
+    for (n = 0; n < aux->ncol; n++)
+    {
+        for (m = 0; m < aux->nrow; m++)
+        {
+            sum = 0.0;
+            for (q = 0; q < xsize; q++)
+            {
+                h = n - q;
+                /* null boundary condition */
+                if (h >= 0 && h < in->ncol)
+                    sum += in->val[h + m * in->ncol] * xker[q];
+            }
+            aux->val[n + m * aux->ncol] = sum;
+        }
     }
 
+    /* Second sampling: y axis */
+    for (m = 0; m < out->nrow; m++)
+    {
+        for (n = 0; n < out->ncol; n++)
+        {
+            sum = 0.0;
+            for (q = 0; q < ysize; q++)
+            {
+                h = m - q;
 
-    /* Second subsampling: y axis */
-    for (m = 0; m < out->nrow; m++) {
-
-	for (n = 0; n < out->ncol; n++) {
-	    sum = 0.0;
-	    for (q = 0; q < ysize; q++) {
-		h = m - q;
-
-		/* null boundary condition */
-		if (h >= 0 && h < in->nrow)
-		    sum += aux->val[n + h * aux->ncol] * yker[q];
-	    }
-	    out->val[n + m * out->ncol] = sum;
-	}
+                /* null boundary condition */
+                if (h >= 0 && h < in->nrow)
+                    sum += aux->val[n + h * aux->ncol] * yker[q];
+            }
+            out->val[n + m * out->ncol] = sum;
+        }
     }
 
     /* free memory */ ;
@@ -139,11 +158,14 @@ ImageFloat convol_sep2(ImageFloat in, float *xker, int xsize, float *yker,
     return out;
 }
 
-	
 
-#define min(a,b)        (((a)>(b)) ? (b) : (a))
-#define max(a,b)        (((a)>(b)) ? (a) : (b))
 
+/**
+ * @brief Central part of the convolution between an ImageFloat and a kernel
+ * @param in - Input Image Float
+ * @param ker -  Input kernel
+ * @return convolved ImageFloat (same size as in)
+ */
 ImageFloat convol(ImageFloat in, ImageFloat kernel)
 {
 	int n,m,k,l,dxS,dyS,kmax,kmin,lmax,lmin,K2,L2;
@@ -185,17 +207,17 @@ ImageFloat convol(ImageFloat in, ImageFloat kernel)
 
 
 /**
- * @brief Extract subimage from  integer pixels 'xmin' to 'xmax' 
+ * @brief Extract subimage from  integer pixels 'xmin' to 'xmax'
  *        and 'ymin' to 'ymax'
  * @param in - input ImageFloat
- * @param xmin 
+ * @param xmin
  * @param xmax
  * @param ymin
  * @param ymax
  * @return ImageFloat created from [xmin,xmax]X[ymin,ymax] region
  */
 ImageFloat extract_window(ImageFloat in, int xmin,
-			  int xmax, int ymin, int ymax)
+                          int xmax, int ymin, int ymax)
 {
     ImageFloat out;
     int i, j;
@@ -203,239 +225,38 @@ ImageFloat extract_window(ImageFloat in, int xmin,
     out = new_imageFloat(xmax - xmin + 1, ymax - ymin + 1);
 
     for (i = 0; i < out->nrow; i++)
-	for (j = 0; j < out->ncol; j++) {
-	    out->val[j + i * out->ncol] =
-		in->val[j + xmin + (i + ymin) * in->ncol];
-	}
-
-    return out;
-}
-
-/**
- * @brief Extract subimage centered in a non-integer pixel (cx,cy)
- *        and square window of size 2*wsize + 1
- * @param in - input ImageFloat
- * @param wsize - window size (half side of the square)
- * @param cx - Center float x-coordinate  
- * @param cy - Center float y-coordinate
- * @return ImageFloat square extracted from 'in' at (cx,cy) and side 2*wsize + 1
- */
-ImageFloat extract_subpx_window(ImageFloat in, int wsize, float cx,
-				float cy)
-{
-    int cx_inf = (int) floor(cx);
-    int cy_inf = (int) floor(cy);
-    float dx = cx - cx_inf;
-    float dy = cy - cy_inf;
-    int xmin, xmax, ymin, ymax;
-    ImageFloat out, aux;
-
-    ImageFloat win;
-
-    float vIx[2];
-    float vIy[2];
-
-    vIx[0] = dx;
-    vIx[1] = 1 - dx;
-    vIy[0] = dy;
-    vIy[1] = 1 - dy;
-
-    xmin = cx_inf - wsize - 1;
-    xmax = cx_inf + wsize + 1;
-    ymin = cy_inf - wsize - 1;
-    ymax = cy_inf + wsize + 1;
-
-    if (xmin < 0)
-	xmin = 0;
-    if (xmax >= in->ncol)
-	xmax = in->ncol - 1;
-    if (ymin < 0)
-	ymin = 0;
-    if (ymax >= in->nrow)
-	ymax = in->nrow - 1;
-
-    /*Extract the window of interest and a little more */
-    win = extract_window(in, xmin, xmax, ymin, ymax);
-    aux = convol_sep2(win, vIx, 2, vIy, 2);
-
-    /*Extract the window of interest */
-    out = extract_window(aux, 2, 2 * wsize + 2, 2, 2 * wsize + 2);
-
-    free_imageFloat(win);
-    free_imageFloat(aux);
-
-    return out;
-}
-
-
-/**
- * @brief Horizontal image gradient calculated by finite differences
- * @param in - input ImageFloat
- * @return ImageFloat with the horizontal gradient 
- */
-ImageFloat gradx(ImageFloat in)
-{
-    int i, j;
-    ImageFloat out;
-    out = new_imageFloat(in->ncol, in->nrow);
-
-    /* out-of-boundary calculus */
-    for (i = 0; i < out->nrow; i++)
-	for (j = 1; j < out->ncol - 1; j++)
-	    out->val[j + i * out->ncol] =
-		0.5 * in->val[j - 1 + i * out->ncol] - 0.5 * in->val[j +
-								     1 +
-								     i *
-								     out->
-								     ncol];
-
-
-    /* in-boundary calculus */
-    j = 0;
-    for (i = 0; i < out->nrow; i++)
-	out->val[j + i * out->ncol] =
-	    0.5 * in->val[j + i * out->ncol] - 0.5 * in->val[j + 1 +
-							     i *
-							     out->ncol];
-
-    j = out->ncol - 1;
-    for (i = 0; i < out->nrow; i++)
-	out->val[j + i * out->ncol] =
-	    0.5 * in->val[j - 1 + i * out->ncol] - 0.5 * in->val[j +
-								 i *
-								 out->
-								 ncol];
-
-    return out;
-}
-
-/**
- * @brief Vertical image gradient calculated by finite differences
- * @param in - input ImageFloat
- * @return ImageFloat with the vertical gradient 
- */
-ImageFloat grady(ImageFloat in)
-{
-    int i, j;
-    ImageFloat out;
-    out = new_imageFloat(in->ncol, in->nrow);
-
-    /* out-of-boundary calculus */
-    for (i = 1; i < out->nrow - 1; i++)
-	for (j = 0; j < out->ncol; j++)
-	    out->val[j + i * out->ncol] =
-		0.5 * in->val[j + (i - 1) * out->ncol] - 0.5 * in->val[j +
-								       (i +
-									1)
-								       *
-								       out->
-								       ncol];
-
-
-    /* in-boundary calculus */
-    i = 0;
     for (j = 0; j < out->ncol; j++)
-	out->val[j + i * out->ncol] =
-	    0.5 * in->val[j + i * out->ncol] - 0.5 * in->val[j +
-							     (i +
-							      1) *
-							     out->ncol];
-
-    i = out->nrow - 1;
-    for (j = 0; j < out->ncol; j++)
-	out->val[j + i * out->ncol] =
-	    0.5 * in->val[j + (i - 1) * out->ncol] - 0.5 * in->val[j +
-								   i *
-								   out->
-								   ncol];
-
-    return out;
-}
-
-
-/**
- * @brief Bilinear image interpolation at coordinates given by 'X' and 'Y'. 
- * @details It is assumed that the input image is sampled in a rectangular grid
- *              from (0,nc-1)X(0,nr-1). X and Y must be the same size and the output 
-                will be also the same size.
- * @param X - input ImageFloat with the horizontal coordinates where the interpolation
- *            is demanded
- * @param X - input ImageFloat with the vertical coordinates where the interpolation
- *            is demanded 
- * @param in - input ImageFloat
- * @return ImageFloat with the interpolated values at (X(i,j),Y(i,j)) positions 
- */
-ImageFloat bilinear(ImageFloat X, ImageFloat Y, ImageFloat in)
-{
-    /* X and Y are the coordinates where the output image is going to be
-     * interpolated. Both images should be of the same time and equal the
-     * size of the output image. I assume that image in is sampled in a
-     * rectangular regular grid from x=0:nc-1 and y=0:nr-1.
-     */
-
-    ImageFloat out;
-
-    int nco = X->ncol;
-    int nro = X->nrow;
-    int nci = in->ncol;
-    int nri = in->nrow;
-
-    int xinf, yinf;
-    float u, v, xp, yp, res;
-
-    int i, j;
-
-    /*Create Output image */
-    out = new_imageFloat(nco, nro);
-
-
-    for (j = 0; j < nco; j++) {
-	for (i = 0; i < nro; i++) {
-
-	    xp = X->val[i * nco + j];
-	    yp = Y->val[i * nco + j];
-
-	    xinf = floor(xp);
-	    yinf = floor(yp);
-
-	    u = xp - (float) xinf;
-	    v = yp - (float) yinf;
-
-	    if (xinf > nci - 2 || xinf < 0 || yinf > nri - 2 || yinf < 0)
-		res = 0;
-	    else
-		res = (1 - u) * (1 - v) * in->val[yinf * nci + xinf] +
-		    (1 - u) * v * in->val[(yinf + 1) * nci + xinf] +
-		    u * (1 - v) * in->val[yinf * nci + xinf + 1] +
-		    u * v * in->val[(yinf + 1) * nci + xinf + 1];
-
-	    out->val[i * nco + j] = res;
-
-	}
+    {
+        out->val[j + i * out->ncol] =
+        in->val[j + xmin + (i + ymin) * in->ncol];
     }
 
     return out;
-
 }
 
+
+
+
 /**
- * @brief Bicubic image interpolation at coordinates given by 'X' and 'Y'. 
+ * @brief Bicubic image interpolation at coordinates given by 'X' and 'Y'.
  * @details It is assumed that the input image is sampled in a rectangular grid
- *              from (0,nc-1)X(0,nr-1). X and Y must be the same size and the output 
- *              will be also the same size. Where there is not enough information
- *              to interpolate (i.e. in the boundary) the function returns 0
+ *          from (0,nc-1)X(0,nr-1). X and Y must be the same size and
+ *          the output will be also the same size. Where there is not enough
+ *          information to interpolate (i.e. in the boundary) the function
+ *          returns 0
  *
- * @param X - input ImageFloat with the horizontal coordinates where the interpolation
- *            is demanded
- * @param X - input ImageFloat with the vertical coordinates where the interpolation
- *            is demanded 
+ * @param X - input ImageFloat with the horizontal coordinates where the
+ *            interpolation is demanded
+ * @param Y - input ImageFloat with the vertical coordinates where the
+ *        interpolation is demanded
  * @param in - input ImageFloat
- * @param in - a Bicubic inerpolator parameter (tipically -0.5)
- * @return ImageFloat with the interpolated values at (X(i,j),Y(i,j)) positions 
+ * @param a -  Bicubic inerpolator parameter (tipically -0.5)
+ * @return ImageFloat with the interpolated values at (X(i,j),Y(i,j))
+ *         positions
  */
-ImageFloat bicubic(ImageFloat X, ImageFloat Y, ImageFloat in, float aw)
+ImageFloat bicubic(ImageFloat X, ImageFloat Y, ImageFloat in, float a)
 {
-    /*X and Y are the coordinates where the output image is going to be
+    /* X and Y are the coordinates where the output image is going to be
      * interpolated. Both images should be of the same time and equal the
      * size of the output image. I assume that image in is sampled in a
      * rectangular regular grid from x=0:nc-1 and y=0:nr-1. Where there is
@@ -450,232 +271,78 @@ ImageFloat bicubic(ImageFloat X, ImageFloat Y, ImageFloat in, float aw)
     int nci = in->ncol;
     int nri = in->nrow;
 
-    double cx[4], cy[4];
+    float cx[4], cy[4];
 
     int xinf, yinf;
-    double xp, yp, res, t, s, at, as, t2, s2, a;
+    float xp, yp, res, t, s, at, as, t2, s2;
 
     int i, j;
 
     /*Create Output image */
     out = new_imageFloat(nco, nro);
 
+    /*----Bicubic interpolation - Central Loop----*/
 
-	a = (double) aw;
-	/*----Bicubic interpolation - Central Loop----*/
+    for (j = 0; j < nco; j++)
+    {
+        for (i = 0; i < nro; i++)
+        {
+            xp = X->val[i * nco + j];
+            yp = Y->val[i * nco + j];
 
-    for (j = 0; j < nco; j++) {
-	for (i = 0; i < nro; i++) {
+            xinf = floor(xp);
+            yinf = floor(yp);
 
-	    xp = X->val[i * nco + j];
-	    yp = Y->val[i * nco + j];
+            t = xp - (float) xinf;
+            t2 = t * t;
+            at = a * t;
+            cx[0] = a * t2 * (1.0 - t);
+            cx[1] = (2.0 * a + 3.0 - (a + 2.0) * t) * t2 - at;
+            cx[2] = ((a + 2.0) * t - a - 3.0) * t2 + 1.0;
+            cx[3] = a * (t - 2.0) * t2 + at;
+            s = yp - (float) yinf;
+            s2 = s * s;
+            as = a * s;
+            cy[0] = a * s2 * (1.0 - s);
+            cy[1] = (2.0 * a + 3.0 - (a + 2.0) * s) * s2 - as;
+            cy[2] = ((a + 2.0) * s - a - 3.0) * s2 + 1.0;
+            cy[3] = a * (s - 2.0) * s2 + as;
 
-	    xinf = (int)floor((double)xp);
-	    yinf = (int)floor((double)yp);
-
-	    t = xp - (double) xinf;
-	    t2 = t * t;
-	    at = a * t;
-	    cx[0] = a * t2 * (1.0 - t);
-	    cx[1] = (2.0 * a + 3.0 - (a+2.0)*t)*t2 - at;
-	    cx[2] = ((a + 2.0) * t - a - 3.0) * t2 + 1.0;
-	    cx[3] = a * (t - 2.0) * t2 + at;		
-		
-	    s = yp - (double) yinf;
-	    s2 = s * s;
-	    as = a * s;
-	    cy[0] = a * s2 * (1.0 - s);
-	    cy[1] = (2.0 * a + 3.0 - (a + 2.0) * s) * s2 - as;
-	    cy[2] = ((a + 2.0) * s - a - 3.0) * s2 + 1.0;
-	    cy[3] = a * (s - 2.0) * s2 + as;
-
-	    /*Put 0 in the border.... */
-	    if (xinf > nci - 3 || xinf < 1 || yinf > nri - 3 || yinf < 1)
-		res = 0;
-	    else
-		res =
-		
-		cy[0] * (cx[0] * in->val[(yinf + 2) * nci + xinf + 2] +
-			     cx[1] * in->val[(yinf + 2) * nci + xinf + 1] +
-			     cx[2] * in->val[(yinf + 2) * nci + xinf] +
-                 cx[3] * in->val[(yinf + 2) * nci + xinf - 1])+
-		 
-		cy[1] * (cx[0] * in->val[(yinf + 1) * nci + xinf + 2] +
-			     cx[1] * in->val[(yinf + 1) * nci + xinf + 1] +
-			     cx[2] * in->val[(yinf + 1) * nci + xinf] +
-			     cx[3] * in->val[(yinf + 1) * nci + xinf - 1]) +
-		
-		cy[2] * (cx[0] * in->val[yinf * nci + xinf + 2] +
-			     cx[1] * in->val[yinf * nci + xinf + 1] +
-			     cx[2] * in->val[yinf * nci + xinf] +
-			     cx[3] * in->val[yinf * nci + xinf - 1]) +
-		
-		cy[3] * (cx[0] * in->val[(yinf - 1) * nci + xinf + 2] +
-			     cx[1] * in->val[(yinf - 1) * nci + xinf + 1] +
-			     cx[2] * in->val[(yinf - 1) * nci + xinf] +
-			     cx[3] * in->val[(yinf - 1) * nci + xinf - 1]);
-
-	    out->val[i * nco + j] = (float) res;
-
-
-	}
+            /*Put 0 in the border.... */
+            if (xinf > nci - 3 || xinf < 1 || yinf > nri - 3 || yinf < 1)
+                res = 0;
+            else
+            /* Re-check if this is not separable...or something */
+                res = cy[0] * (cx[0] * in->val[(yinf + 2) * nci + xinf + 2] +
+                               cx[1] * in->val[(yinf + 2) * nci + xinf + 1] +
+                               cx[2] * in->val[(yinf + 2) * nci + xinf] +
+                               cx[3] * in->val[(yinf + 2) * nci + xinf - 1]
+                               ) +
+                    cy[1] * (cx[0] * in->val[(yinf + 1) * nci + xinf + 2] +
+                             cx[1] * in->val[(yinf + 1) * nci + xinf + 1] +
+                             cx[2] * in->val[(yinf + 1) * nci + xinf] +
+                             cx[3] * in->val[(yinf + 1) * nci + xinf - 1]
+                             ) +
+                    cy[2] * (cx[0] * in->val[yinf * nci + xinf + 2] +
+                             cx[1] * in->val[yinf * nci + xinf + 1] +
+                             cx[2] * in->val[yinf * nci + xinf] +
+                             cx[3] * in->val[yinf * nci + xinf - 1]
+                             ) +
+                    cy[3] * (cx[0] * in->val[(yinf - 1) * nci + xinf + 2] +
+                             cx[1] * in->val[(yinf - 1) * nci + xinf + 1] +
+                             cx[2] * in->val[(yinf - 1) * nci + xinf] +
+                             cx[3] * in->val[(yinf - 1) * nci + xinf - 1]
+                             );
+            out->val[i * nco + j] = res;
+        }
     }
 
-
-    return out;
-
-
-}
-
-/**
- * @brief Calculate the Power (mean of the square image) of a subimage (xmin,xmax) X (ymin,ymax)
- * @param in - input ImageFloat
- * @param xmin 
- * @param xmax
- * @param ymin
- * @param ymax
- * @return mean of the square selected subimage 
- */
-float power_window(ImageFloat in, int xmin, int xmax, int ymin, int ymax)
-{
-    float out = 0;
-    int i, j;
-
-    for (i = ymin; i < ymax + 1; i++)
-	for (j = xmin; j < xmax + 1; j++) {
-	    out +=
-		(in->val[j + i * in->ncol]) * (in->val[j + i * in->ncol]);
-	}
-
-    out = out / ((xmax - xmin + 1) * (ymax - ymin + 1));
-
-    return out;
-}
-
-/**
- * @brief Calculate the mean value of a subimage (xmin,xmax) X (ymin,ymax)
- * @param in - input ImageFloat
- * @param xmin 
- * @param xmax
- * @param ymin
- * @param ymax
- * @return mean value of the selected subimage 
- */
-float mean_window(ImageFloat in, int xmin, int xmax, int ymin, int ymax)
-{
-    float out = 0;
-    int i, j;
-
-    for (i = ymin; i < ymax + 1; i++)
-	for (j = xmin; j < xmax + 1; j++) {
-	    out += (in->val[j + i * in->ncol]);
-	}
-
-    out = out / ((xmax - xmin + 1) * (ymax - ymin + 1));
-
     return out;
 }
 
 
-/**
- * @brief Calculate the mean value of a subimage at center in non-integer pixel
- *        (cx,cy) and square window of size 2*wsize + 1
- * @param in - input ImageFloat
- * @param wsize - window size (half side of the square)
- * @param cx - Center float x-coordinate  
- * @param cy - Center float y-coordinate
- * @return mean value of the selected subimage 
- */
-float mean_subpx_window(ImageFloat in, int wsize, float cx, float cy)
-{
-    int cx_inf = (int) floor(cx);
-    int cy_inf = (int) floor(cy);
-    float dx = cx - cx_inf;
-    float dy = cy - cy_inf;
-    int xmin, xmax, ymin, ymax;
-    ImageFloat aux;
-    float out;
 
-    float vIx[2], vIy[2];
 
-    vIx[0] = dx;
-    vIx[1] = 1 - dx;
-    vIy[0] = dy;
-    vIy[1] = 1 - dy;
-
-    aux = convol_sep2(in, vIx, 2, vIy, 2);
-
-    xmin = cx_inf - wsize + 1;
-    xmax = cx_inf + wsize + 1;
-    ymin = cy_inf - wsize + 1;
-    ymax = cy_inf + wsize + 1;
-
-    if (xmin < 0)
-	xmin = 0;
-    if (xmax >= aux->ncol)
-	xmax = aux->ncol - 1;
-    if (ymin < 0)
-	ymin = 0;
-    if (ymax >= aux->nrow)
-	ymax = aux->nrow - 1;
-
-    /*printf("%d %d %d %d\n",xmin,xmax,ymin,ymax); */
-    out = mean_window(aux, xmin, xmax, ymin, ymax);
-
-    free_imageFloat(aux);
-
-    return out;
-}
-
-/**
- * @brief Calculate the Power (mean value of the square) of a subimage at center 
-          in non-integer pixel (cx,cy) and square window of size 2*wsize + 1
- * @param in - input ImageFloat
- * @param wsize - window size (half side of the square)
- * @param cx - Center float x-coordinate  
- * @param cy - Center float y-coordinate
- * @return mean value of the square of selected subimage (power)
- */
-float power_subpx_window(ImageFloat in, int wsize, float cx, float cy)
-{
-
-    int cx_inf = (int) floor(cx);
-    int cy_inf = (int) floor(cy);
-    float dx = cx - cx_inf;
-    float dy = cy - cy_inf;
-    int xmin, xmax, ymin, ymax;
-    ImageFloat aux;
-    float out;
-
-    float vIx[2], vIy[2];
-
-    vIx[0] = dx;
-    vIx[1] = 1 - dx;
-    vIy[0] = dy;
-    vIy[1] = 1 - dy;
-
-    aux = convol_sep2(in, vIx, 2, vIy, 2);
-
-    xmin = cx_inf - wsize + 1;
-    xmax = cx_inf + wsize + 1;
-    ymin = cy_inf - wsize + 1;
-    ymax = cy_inf + wsize + 1;
-
-    if (xmin < 0)
-	xmin = 0;
-    if (xmax >= aux->ncol)
-	xmax = aux->ncol - 1;
-    if (ymin < 0)
-	ymin = 0;
-    if (ymax >= aux->nrow)
-	ymax = aux->nrow - 1;
-
-    out = power_window(aux, xmin, xmax, ymin, ymax);
-
-    free_imageFloat(aux);
-
-    return out;
-}
 
 /**
  * @brief Compute the DCT Transform of ImageFloat 'in'
@@ -693,18 +360,21 @@ ImageFloat compute_dct_image(ImageFloat in)
 
     out = new_imageFloat(nx, ny);
 
-	/*BUGGG ny first!!*/
-    fw_plan =
-	fftwf_plan_r2r_2d(ny, nx, in->val, out->val, FFTW_REDFT10,
-			  FFTW_REDFT10, FFTW_ESTIMATE);
-
+    /*Be careful! the order of the parameters: ny then nx
+     "The multi-dimensional arrays passed to fftw_plan_dft etcetera are
+     expected to be stored as a single contiguous block in row-major order
+     (sometimes called “C order”).
+     Basically, this means that as you step through adjacent
+     memory locations, the first dimension's index varies most slowly and the
+     last dimension's index varies most quickly."*/
+    fw_plan = fftwf_plan_r2r_2d(ny, nx, in->val, out->val, FFTW_REDFT10,
+                                FFTW_REDFT10, FFTW_ESTIMATE);
     fftwf_execute(fw_plan);
 
     /* Do the cleaning */
     fftwf_destroy_plan(fw_plan);
 
     return out;
-
 }
 
 /**
@@ -723,10 +393,16 @@ ImageFloat compute_idct_image(ImageFloat in)
 
     out = new_imageFloat(nx, ny);
 
-	/*BUGGG ny first!!*/
-    bw_plan =
-	fftwf_plan_r2r_2d(ny, nx, in->val, out->val, FFTW_REDFT01,
-			  FFTW_REDFT01, FFTW_ESTIMATE);
+    /*Be careful! the order of the parameters: ny then nx
+     "The multi-dimensional arrays passed to fftw_plan_dft etcetera are
+     expected to be stored as a single contiguous block in row-major order
+     (sometimes called “C order”).
+     Basically, this means that as you step through adjacent
+     memory locations, the first dimension's index varies most slowly and the
+     last dimension's index varies most quickly."*/
+
+    bw_plan = fftwf_plan_r2r_2d(ny, nx, in->val, out->val, FFTW_REDFT01,
+                                FFTW_REDFT01, FFTW_ESTIMATE);
 
     fftwf_execute(bw_plan);
 
@@ -734,21 +410,35 @@ ImageFloat compute_idct_image(ImageFloat in)
     fftwf_destroy_plan(bw_plan);
 
     return out;
-
 }
 
 
-/** Compute a Gaussian kernel of length 'n',
- standard deviation 'sigma', and centered at value 'mean'.
- 
- For example, if mean=0.5, the Gaussian will be centered
- in the middle point between values 'values[0]'
- and 'values[1]'.
- 
- 
+/*----------------------------------------------------------------------------
+ The followoing function for computing the samples of a Gaussian kernel is 
+ based on those of LSD - Line Segment Detector on digital images 
+ Copyright 2007-2010 rafael grompone von gioi (grompone@gmail.com)
+ ----------------------------------------------------------------------------
+ */
+
+/**
+ * @brief Compute a Gaussian kernel of length 'nsize' centered at zero.
+ * @param sigma - standard deviation 
+ * @param nsize -  lenght of the kernel 
+ * @return array of length 'nsize' containing the gaussian samples
  */
 float* gaussian_kernel(float sigma, int *nsize)
 {
+    
+    /** Compute a Gaussian kernel of length 'n',
+     standard deviation 'sigma', and centered at value zero.
+     
+     For example, if mean=0.5, the Gaussian will be centered
+     in the middle point between values 'values[0]'
+     and 'values[1]'.
+     
+     
+     */
+    
 	float sum = 0.0;
 	float *kernel;
 	float val;
@@ -789,12 +479,186 @@ float* gaussian_kernel(float sigma, int *nsize)
 }
 
 
+/* homemade round function: float to int*/
+/** 
+ *  @brief Homemeda round function: float to closest int.
+ *  @param x  - input float
+ *  @return closest int [x] to x 
+ */
+ int roundfi(float x) {
+	if ((x <= INT_MIN-0.5) || (x >= INT_MAX+0.5))
+		error("roundfi() Float to int conversion out of range");
+	if (x >= 0)
+		return (int) (x+0.5);
+	return (int) (x-0.5);
+}
 
 
 
 
+/** 
+ *  @brief Low-Pass filter Image (with DCT Transform).
+ *  Put to zero all frequencies higher than fcx or fcy 
+ *  (Let c_ij = DCT(in) then c_ij = 0 for j>=fcx or i>=fcy)
+ *  @param fcx   - Cut-off frequency in x
+ *  @param fcy   - Cut-off frequency in y  
+ *  @return Low-pass filtered image
+ */
+ImageFloat lpf_image_dct (ImageFloat in, int fcx, int fcy)
+{
+	ImageFloat data_dct, out;
+	int i, j;
+	int nx = in->ncol;
+	int ny = in->nrow;
+	float k;
+	
+	data_dct = compute_dct_image (in);
+	
+	for (i = fcy; i < ny; i++)
+		for (j = 0; j < nx; j++)
+			data_dct->val[i * nx + j] = 0;
+	
+	for (i = 0; i < ny; i++)
+		for (j = fcx; j < nx; j++)
+			data_dct->val[i * nx + j] = 0;
+	
+	
+	out = compute_idct_image (data_dct);
+	
+	/*Normalize image because DCT introduces
+	 * a constant factor 4*nx*ny
+	 */
+	k = 4 * nx * ny;
+	for (i = 0; i < nx * ny; i++)
+		out->val[i] = out->val[i] / k;
+	
+	
+	/*
+	 * cleanup
+	 */
+	free_imageFloat (data_dct);
+	
+	return out;
+	
+}
+
+/**
+ * @brief Normalize an array of floats to sum_i h[i] = 1 
+ * @param h   - Array of floats 
+ * @param n   - Size of the array 
+ */
+void normalize_area(float* h, int n)
+{
+
+    int i;
+    float acsum = 0;
+    
+    for (i = 0; i < n; i++)
+        acsum = acsum + h[i];
+    
+    for (i = 0; i < n; i++)
+        h[i] = h[i]/acsum;
+    
+}
 
 
+/**
+ * @brief Evaluate a Homography in an array 'np' points 'Pin' and
+ *        return the result in the array 'Pout' 
+ * @param H   - Homography 
+ * @param Pin - Array of input points 
+ * @param Pou - Array of output points
+ * @param np  - number of points 
+ */
+void evaluate_homography(float* H, float *Pin, float *Pout, int np)
+{
+    int i;
+    float xPo, yPo, zPo, xP, yP;
+	
+	
+    for (i = 0; i < np; i++) {
+		/*Read the point */
+		xP = Pin[2 * i];
+		yP = Pin[2 * i + 1];
+		
+		/*Apply the homography to (xP,yP) */
+		xPo = H[0] * xP + H[1] * yP + H[2];
+		yPo = H[3] * xP + H[4] * yP + H[5];
+		zPo = H[6] * xP + H[7] * yP + H[8];
+		
+		Pout[2 * i] = xPo/zPo;
+		Pout[2 * i + 1] = yPo/zPo;
+    }
+	
+}
 
+/** 
+ *  @brief Write an Array of floats (Matrix)  to an ASCII file
+ *  @param M - array of floats to write
+ *  @param ncol - number of columns of M
+ *  @param nrow - number of rows of M
+ *  @param name  - filename
+ */
+void write_ascii_matrix(float *M, int ncol, int nrow, char *name)
+{
+	FILE *f;
+	int x, y, n;
+	
+	/* open file */
+	f = fopen (name, "w");
+	if (f == NULL)
+		error ("Can't open output file.");
+	
+	/* write header */
+	
+	/* write data */
+	for (y = 0; y < nrow; y++)
+    {
+		for (x = 0; x < ncol; x++, n++)
+			fprintf (f, "%f ", M[y + x * nrow]);
+		
+		fprintf (f, "\n");
+    }
+	
+	
+	/* close file */
+	fclose (f);
+}
+
+
+/** 
+ *  @brief Write an ImageFloat to an ASCII file
+ *  @param image - image to write
+ *  @param name  - filename
+ */
+void write_ascii_imageFloat (ImageFloat image, char *name)
+{
+	FILE *f;
+	int x, y, n;
+	
+	
+	/* open file */
+	f = fopen (name, "w");
+	if (f == NULL)
+    {
+		error ("Can't open output file.");
+    }
+	
+	/* write header */
+	
+	/* write data */
+	for (y = 0; y < image->nrow; y++)
+    {
+		for (x = 0; x < image->ncol; x++, n++){
+			
+			fprintf (f, "%f ", image->val[x + y * image->ncol]);
+		}
+		
+		fprintf (f,"\n");
+    }
+	
+	/* close file */
+	fclose (f);
+}
 
 
