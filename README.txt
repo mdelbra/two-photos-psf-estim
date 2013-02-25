@@ -31,14 +31,10 @@ and then estimating the kernel blur between them.
  README.txt
  ls.c
  ls.h
- homography.c
- homography.h
  image.c
  image.h
  io_pgm.c
  io_phm.h
- detect_pattern.c
- detect_pattern.h
  two_photos_psf_estim.c
  two_photos_psf_estim.h
  two_photos_estim_main.c
