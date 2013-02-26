@@ -92,7 +92,7 @@ static int parse_arguments(program_argums *param, int argc, char *argv[])
 	/* Set parameter defaults */	
 	param->s = 3;
 	param->psf_nx = 13;
-	param->psf_ny = 19;
+	param->psf_ny = 13;
 	param->threshold = 0;
 	param->img_zin = NULL;
 	param->img_zout = NULL;

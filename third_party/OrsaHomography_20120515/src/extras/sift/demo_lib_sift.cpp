@@ -44,6 +44,7 @@ typedef LWImage<float> flimage;
 
 #define DEBUG 0
 
+
 void default_sift_parameters(siftPar &par)
 {
 	par.OctaveMax=3;
@@ -65,9 +66,9 @@ void default_sift_parameters(siftPar &par)
 	par.MatchRatio = 0.6f;
 	par.MatchXradius = 1000000.0f;
 	par.MatchYradius = 1000000.0f;
-
+    
 	par.noncorrectlylocalized = 0;
-
+    
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

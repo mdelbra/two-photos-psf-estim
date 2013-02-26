@@ -36,7 +36,7 @@
  *
  * A detail desription and an online demo can be accessed from:
  *
- * \li http://www.ipol.im/pub/algo/admm_non_blind_psf_estimation/
+ * \li to_be_updated_final_url
  *
  * The source code consists of:
  *
@@ -627,9 +627,10 @@ void two_photos_psf_estim (float *img1, int nx1, int ny1,
     if(outprefix)
 	{
 		
-		/*all output images are re-scaled to [0,255]
-		 normalizing with the imgC values
-		 Difference image is normalized to 15%of the max-min values of imgC.
+		/*all output images are re-scaled to be in [0,255]
+		 normalizing with the max and min values of [imgC,imgW] values
+		 Difference image is normalized to [-0.05(max-min),0.05(max-min)]
+         values of [imgC,imgW].
 		 */
         
 		/*The normalization is done with the max value of imgC*/
@@ -707,15 +708,17 @@ void two_photos_psf_estim (float *img1, int nx1, int ny1,
 					imgCxs->val[i*imgCxs->ncol +j] = 0;	
 		
 		
-		/*The normalization is done with the 20% of min_val
-		 and 10% of max_vale*/
+		/*The normalization of the image difference is done with so that the 
+         values are in [-0.05(max_val-min_val),0.05(max_val-min_val)] (i.e.
+         the dynamical range is compressed to 10%)*/
 		
 		strcpy(file_name,outprefix);
 		strcat(file_name,"_diff.pgm");
+        
 		write_pgm_normalize_given_minmax_float(file_name,imgCxs->val, 
                                                imgCxs->ncol, imgCxs->nrow, 
-                                               0.15*(-max_val + min_val),
-                                               0.1*(max_val - min_val));
+                                               -0.05*(max_val - min_val),
+                                               +0.05*(max_val - min_val));
 		
 		strcpy(file_name,outprefix);
 		strcat(file_name,"_diff.txt");
@@ -724,9 +727,7 @@ void two_photos_psf_estim (float *img1, int nx1, int ny1,
 		
 	}
     
-    
-    write_ascii_matrix(k,psf_ncol,psf_nrow, "k1.txt");
-    
+        
     free_imageFloat (imgMask);	
 	free_imageFloat (imgW);
 	free_imageFloat (imgC);
