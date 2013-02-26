@@ -162,7 +162,7 @@ void make_Ab (ImageFloat imgC, ImageFloat imgW, ImageFloat imgMask,
                     {
                         if ((i - u >= 0) && (j - v >= 0)
                             && (i - u < imgC->nrow) && (j - v < imgC->ncol))
-                            (*A)[mkMs * nkMs * (v + u * q) + (i / s + j / s * mkMs)]
+                            (*A)[mkMs * nkMs * (v + u * q) + (i/s + j/s*mkMs)]
                             = imgC->val[j - v + imgC->ncol * (i - u)];
                                 /*Save by cols*/
                     }
@@ -366,7 +366,8 @@ void make_Ab (ImageFloat imgC, ImageFloat imgW, ImageFloat imgMask,
 
 
 
- void inter_image_kernel_to_psf(float *H, float* xinter, float *h, int nx, int ny)
+void inter_image_kernel_to_psf(float *H, float* xinter, float *h, 
+                               int nx, int ny)
 {
 	
 	int it_max = 3;
@@ -718,7 +719,7 @@ void two_photos_psf_estim (float *img1, int nx1, int ny1,
 		write_pgm_normalize_given_minmax_float(file_name,imgCxs->val, 
                                                imgCxs->ncol, imgCxs->nrow, 
                                                -0.05*(max_val - min_val),
-                                               +0.05*(max_val - min_val));
+                                               0.05*(max_val - min_val));
 		
 		strcpy(file_name,outprefix);
 		strcat(file_name,"_diff.txt");
