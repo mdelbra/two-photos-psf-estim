@@ -1,6 +1,6 @@
 Recovering the Subpixel PSF from Two Photographs at Different Distances
 ======================================================================
-Version 1.0 - February 22, 2013
+Version 1.1 - March 4, 2013
 
 by    Mauricio Delbracio <mdelbra@gmail.com>
       Andres Almansa
