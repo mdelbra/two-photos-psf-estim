@@ -45,14 +45,14 @@ void write_pgm_normalize_float(const char *fname,
                                const float *data, int ncol, int nrow);
 
 void write_pgm_normalize_given_minmax_float(const char *fname, 
-									   const float *data, int ncol,
-									   int nrow, float min,
-											float max);
+                                       const float *data, int ncol,
+                                       int nrow, float min,
+                                            float max);
 
 
 void write_ppm_normalize_float(const char *fname,
                                const float *rdata, const float *gdata,
-							   const float *bdata, int ncol, int nrow);
+                               const float *bdata, int ncol, int nrow);
 
-	
+    
 #endif  

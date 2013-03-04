@@ -187,14 +187,14 @@ libNumerics::matrix<double> zoomtrans(double z, double dx, double dy) {
 
 
 extern "C" int orsa_homography_sift(float* img1, int nx1, int ny1,
-									float* img2, int nx2, int ny2,
-									double precision, float *hom,
-									float **matchsHR, float **matchsLR, int* nm,
-									char *reverse)
+                                    float* img2, int nx2, int ny2,
+                                    double precision, float *hom,
+                                    float **matchsHR, float **matchsLR, int* nm,
+                                    char *reverse)
 {
-	
-	
-	/*BEGIN Normalization input images for SIFT (0,255)*/
+    
+    
+    /*BEGIN Normalization input images for SIFT (0,255)*/
     /* check min and max values img1*/
     float max_val1, max_val2, min_val1, min_val2, max_val, min_val; 
     float v;
@@ -237,29 +237,29 @@ extern "C" int orsa_homography_sift(float* img1, int nx1, int ny1,
     
     /*END Normalization*/
     
-	Image<float> image1(nx1, ny1, img1);
-	Image<float> image2(nx2, ny2, img2);
-	
-	
-	Image<unsigned char> image1Gray, image2Gray;
-	libs::convertImage(image1, &image1Gray);
-	libs::convertImage(image2, &image2Gray);
-	
-	const int w1=image1Gray.Width(), h1=image1Gray.Height();
-	const int w2=image2Gray.Width(), h2=image2Gray.Height();
-	
+    Image<float> image1(nx1, ny1, img1);
+    Image<float> image2(nx2, ny2, img2);
     
     
-	// SIFT
-	std::vector<Match> vec_matchings;
-	SIFT(image1Gray, image2Gray, vec_matchings);
-	
-	// Remove duplicates (frequent with SIFT)
-	rm_duplicates(vec_matchings);
-	
-	
-	
-	/*Matcher before ORSA consistency check!
+    Image<unsigned char> image1Gray, image2Gray;
+    libs::convertImage(image1, &image1Gray);
+    libs::convertImage(image2, &image2Gray);
+    
+    const int w1=image1Gray.Width(), h1=image1Gray.Height();
+    const int w2=image2Gray.Width(), h2=image2Gray.Height();
+    
+    
+    
+    // SIFT
+    std::vector<Match> vec_matchings;
+    SIFT(image1Gray, image2Gray, vec_matchings);
+    
+    // Remove duplicates (frequent with SIFT)
+    rm_duplicates(vec_matchings);
+    
+    
+    
+    /*Matcher before ORSA consistency check!
      int np;
      float *matchings1;
      float *matchings2;
@@ -285,115 +285,115 @@ extern "C" int orsa_homography_sift(float* img1, int nx1, int ny1,
      *nm = np;
      */
     
-	
-	// Estimation of homography with ORSA
-	/*Assume order ir correct*/
-	*reverse = 0;
-	
-	libNumerics::matrix<double> H(3,3);
-	std::vector<int> vec_inliers;
-	bool ok = ORSA(vec_matchings, w1, h1, w2, h2, precision, H, vec_inliers);
-	if(ok)
-	{
-		H /= H(2,2);
-		//std::cout << "H=" << H <<std::endl;
-	}
-	
-	/*Check if H(1,1) and H(2,2) are greater than 1*/
-	if(H(0,0)<1 && H(1,1)<1)
-	{
+    
+    // Estimation of homography with ORSA
+    /*Assume order ir correct*/
+    *reverse = 0;
+    
+    libNumerics::matrix<double> H(3,3);
+    std::vector<int> vec_inliers;
+    bool ok = ORSA(vec_matchings, w1, h1, w2, h2, precision, H, vec_inliers);
+    if(ok)
+    {
+        H /= H(2,2);
+        //std::cout << "H=" << H <<std::endl;
+    }
+    
+    /*Check if H(1,1) and H(2,2) are greater than 1*/
+    if(H(0,0)<1 && H(1,1)<1)
+    {
         
-		*reverse = 1;
-		
-		/*change the order of the matches img1 --> img2 and viceverza*/
-		for (size_t i=0; i < vec_matchings.size(); ++i)
-		{
-			float aux;
-			
-			aux = vec_matchings[i].x1;
-			vec_matchings[i].x1 = vec_matchings[i].x2;
-			vec_matchings[i].x2 = aux;
-			
-			aux = vec_matchings[i].y1;
-			vec_matchings[i].y1 = vec_matchings[i].y2;
-			vec_matchings[i].y2 = aux;
-			
-		}
-		
-		ok = ORSA(vec_matchings, w2, h2, w1, h1, precision, H, vec_inliers);
+        *reverse = 1;
         
-		if(ok)
-		{
-			H /= H(2,2);
-			//std::cout << "H=" << H <<std::endl;
-		}
-		
-	}
-	
-	
-	std::vector<Match> good_match;
-	
-	std::vector<int>::const_iterator it = vec_inliers.begin();
-	for(; it != vec_inliers.end(); it++)
-		good_match.push_back(vec_matchings[*it]);
-	
-	
-	/*Matcher before ORSA consistency check!*/
-	if(matchsHR!=NULL && matchsLR!=NULL){
-		
-		int np;
-		float *matchingsHR;
-		float *matchingsLR;
-		
-		np = good_match.size();
-		
-		matchingsHR = (float*) malloc( 2*np*sizeof(float));
-		matchingsLR = (float*) malloc( 2*np*sizeof(float));
-		
-		
-		for (int i=0; i < np; ++i)
-		{
-			matchingsHR[2*i] = good_match[i].x1;
-			matchingsHR[2*i+1] = good_match[i].y1;
-			matchingsLR[2*i] = good_match[i].x2;
-			matchingsLR[2*i+1] = good_match[i].y2;
-			
-		}
-		
-		*matchsHR = matchingsHR;
-		*matchsLR = matchingsLR;
-		*nm = np;
-		
-		
-	}
-	
-	/*Copy homography*/
-	if(hom!=NULL)
-	{
-		hom[0] = H(0,0);
-		hom[1] = H(0,1);
-		hom[2] = H(0,2);
-		hom[3] = H(1,0);
-		hom[4] = H(1,1);
-		hom[5] = H(1,2);
-		hom[6] = H(2,0);
-		hom[7] = H(2,1);
-		hom[8] = H(2,2);
-	}
-	else{
-		std::cerr << "Failed to return the homography parameters" << std::endl;
-		return 1;
-	}
-	
+        /*change the order of the matches img1 --> img2 and viceverza*/
+        for (size_t i=0; i < vec_matchings.size(); ++i)
+        {
+            float aux;
+            
+            aux = vec_matchings[i].x1;
+            vec_matchings[i].x1 = vec_matchings[i].x2;
+            vec_matchings[i].x2 = aux;
+            
+            aux = vec_matchings[i].y1;
+            vec_matchings[i].y1 = vec_matchings[i].y2;
+            vec_matchings[i].y2 = aux;
+            
+        }
+        
+        ok = ORSA(vec_matchings, w2, h2, w1, h1, precision, H, vec_inliers);
+        
+        if(ok)
+        {
+            H /= H(2,2);
+            //std::cout << "H=" << H <<std::endl;
+        }
+        
+    }
     
     
-	if(!ok)
-	{
-		std::cerr << "Failed to estimate a model" << std::endl;
-		return 1;
-	}
-	
-	return 0;
+    std::vector<Match> good_match;
+    
+    std::vector<int>::const_iterator it = vec_inliers.begin();
+    for(; it != vec_inliers.end(); it++)
+        good_match.push_back(vec_matchings[*it]);
+    
+    
+    /*Matcher before ORSA consistency check!*/
+    if(matchsHR!=NULL && matchsLR!=NULL){
+        
+        int np;
+        float *matchingsHR;
+        float *matchingsLR;
+        
+        np = good_match.size();
+        
+        matchingsHR = (float*) malloc( 2*np*sizeof(float));
+        matchingsLR = (float*) malloc( 2*np*sizeof(float));
+        
+        
+        for (int i=0; i < np; ++i)
+        {
+            matchingsHR[2*i] = good_match[i].x1;
+            matchingsHR[2*i+1] = good_match[i].y1;
+            matchingsLR[2*i] = good_match[i].x2;
+            matchingsLR[2*i+1] = good_match[i].y2;
+            
+        }
+        
+        *matchsHR = matchingsHR;
+        *matchsLR = matchingsLR;
+        *nm = np;
+        
+        
+    }
+    
+    /*Copy homography*/
+    if(hom!=NULL)
+    {
+        hom[0] = H(0,0);
+        hom[1] = H(0,1);
+        hom[2] = H(0,2);
+        hom[3] = H(1,0);
+        hom[4] = H(1,1);
+        hom[5] = H(1,2);
+        hom[6] = H(2,0);
+        hom[7] = H(2,1);
+        hom[8] = H(2,2);
+    }
+    else{
+        std::cerr << "Failed to return the homography parameters" << std::endl;
+        return 1;
+    }
+    
+    
+    
+    if(!ok)
+    {
+        std::cerr << "Failed to estimate a model" << std::endl;
+        return 1;
+    }
+    
+    return 0;
 }
 
 

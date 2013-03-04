@@ -168,40 +168,40 @@ ImageFloat convol_sep2(ImageFloat in, float *xker, int xsize, float *yker,
  */
 ImageFloat convol(ImageFloat in, ImageFloat kernel)
 {
-	int n,m,k,l,dxS,dyS,kmax,kmin,lmax,lmin,K2,L2;
-	double S;
-	float *ptrO,*ptrI,*ptrF;
-	ImageFloat out;
-	
-	/*create output image - central part of the full convolution*/
-	out=new_imageFloat(in->ncol, in->nrow);
-	if (!out) error("not enough memory\n"); 
-	
-	K2 = kernel->ncol / 2;
-	L2 = kernel->nrow / 2;
-	dxS = in->ncol;
-	dyS = in->nrow;
-	
-	ptrO = out->val;
-	ptrI = in->val;
-	
-	for(m=0;m<in->nrow;m++) 
-		for (n=0;n<in->ncol;n++) 
-		{
-			S = 0.0;
-			kmax = min(kernel->ncol-1,n+K2);
-			kmin = max(0,1+n+K2-dxS);
-			lmax = min(kernel->nrow-1,m+L2);
-			lmin = max(0,1+m+L2-dyS);
-			
-			ptrF = kernel->val;
-			for (l=lmin;l<=lmax;l++) 
-				for (k=kmin;k<=kmax;k++) 
-					S += ptrI[dxS*(m-l+L2) + (n-k+K2)] * ptrF[kernel->ncol*l+k];
-			*ptrO++ = (float) S;
-		}
-	
-	return out;
+    int n,m,k,l,dxS,dyS,kmax,kmin,lmax,lmin,K2,L2;
+    double S;
+    float *ptrO,*ptrI,*ptrF;
+    ImageFloat out;
+    
+    /*create output image - central part of the full convolution*/
+    out=new_imageFloat(in->ncol, in->nrow);
+    if (!out) error("not enough memory\n"); 
+    
+    K2 = kernel->ncol / 2;
+    L2 = kernel->nrow / 2;
+    dxS = in->ncol;
+    dyS = in->nrow;
+    
+    ptrO = out->val;
+    ptrI = in->val;
+    
+    for(m=0;m<in->nrow;m++) 
+        for (n=0;n<in->ncol;n++) 
+        {
+            S = 0.0;
+            kmax = min(kernel->ncol-1,n+K2);
+            kmin = max(0,1+n+K2-dxS);
+            lmax = min(kernel->nrow-1,m+L2);
+            lmin = max(0,1+m+L2-dyS);
+            
+            ptrF = kernel->val;
+            for (l=lmin;l<=lmax;l++) 
+                for (k=kmin;k<=kmax;k++) 
+                    S += ptrI[dxS*(m-l+L2) + (n-k+K2)] * ptrF[kernel->ncol*l+k];
+            *ptrO++ = (float) S;
+        }
+    
+    return out;
 }
 
 
@@ -439,43 +439,43 @@ float* gaussian_kernel(float sigma, int *nsize)
      
      */
     
-	float sum = 0.0;
-	float *kernel;
-	float val;
-	int n, i, h;
-	float prec;
-	
-	
-	/* check parameters */
-	if( sigma <= 0.0 ) error("gaussian_kernel: 'sigma' must be positive.");
-	
-	/*
+    float sum = 0.0;
+    float *kernel;
+    float val;
+    int n, i, h;
+    float prec;
+    
+    
+    /* check parameters */
+    if( sigma <= 0.0 ) error("gaussian_kernel: 'sigma' must be positive.");
+    
+    /*
      The size of the kernel is selected to guarantee that the
      the first discarded term is at least 10^prec times smaller
      than the central value. For that, h should be larger than x, with
-	 e^(-x^2/2sigma^2) = 1/10^prec.
+     e^(-x^2/2sigma^2) = 1/10^prec.
      Then,
-	 x = sigma * sqrt( 2 * prec * ln(10) ).
-	 */
-	prec = 3.0;
-	h = (int) ceil( sigma * sqrt( 2.0 * prec * log(10.0) ) );
-	n = 1+2*h; /* kernel size */
-	
-	kernel = (float*) malloc( n * sizeof(float));
-	
-	/* compute Gaussian kernel */
-	for(i=0;i<n;i++)
+     x = sigma * sqrt( 2 * prec * ln(10) ).
+     */
+    prec = 3.0;
+    h = (int) ceil( sigma * sqrt( 2.0 * prec * log(10.0) ) );
+    n = 1+2*h; /* kernel size */
+    
+    kernel = (float*) malloc( n * sizeof(float));
+    
+    /* compute Gaussian kernel */
+    for(i=0;i<n;i++)
     {
-		val = ( (float) i - h ) / sigma;
-		kernel[i] = exp( -0.5 * val * val );
-		sum += kernel[i];
+        val = ( (float) i - h ) / sigma;
+        kernel[i] = exp( -0.5 * val * val );
+        sum += kernel[i];
     }
-	
-	/* normalization */
-	if( sum >= 0.0 ) for(i=0;i<n;i++) kernel[i] /= sum;
-	
-	*nsize = n;
-	return kernel;
+    
+    /* normalization */
+    if( sum >= 0.0 ) for(i=0;i<n;i++) kernel[i] /= sum;
+    
+    *nsize = n;
+    return kernel;
 }
 
 
@@ -486,11 +486,11 @@ float* gaussian_kernel(float sigma, int *nsize)
  *  @return closest int [x] to x 
  */
  int roundfi(float x) {
-	if ((x <= INT_MIN-0.5) || (x >= INT_MAX+0.5))
-		error("roundfi() Float to int conversion out of range");
-	if (x >= 0)
-		return (int) (x+0.5);
-	return (int) (x-0.5);
+    if ((x <= INT_MIN-0.5) || (x >= INT_MAX+0.5))
+        error("roundfi() Float to int conversion out of range");
+    if (x >= 0)
+        return (int) (x+0.5);
+    return (int) (x-0.5);
 }
 
 
@@ -506,40 +506,40 @@ float* gaussian_kernel(float sigma, int *nsize)
  */
 ImageFloat lpf_image_dct (ImageFloat in, int fcx, int fcy)
 {
-	ImageFloat data_dct, out;
-	int i, j;
-	int nx = in->ncol;
-	int ny = in->nrow;
-	float k;
-	
-	data_dct = compute_dct_image (in);
-	
-	for (i = fcy; i < ny; i++)
-		for (j = 0; j < nx; j++)
-			data_dct->val[i * nx + j] = 0;
-	
-	for (i = 0; i < ny; i++)
-		for (j = fcx; j < nx; j++)
-			data_dct->val[i * nx + j] = 0;
-	
-	
-	out = compute_idct_image (data_dct);
-	
-	/*Normalize image because DCT introduces
-	 * a constant factor 4*nx*ny
-	 */
-	k = 4 * nx * ny;
-	for (i = 0; i < nx * ny; i++)
-		out->val[i] = out->val[i] / k;
-	
-	
-	/*
-	 * cleanup
-	 */
-	free_imageFloat (data_dct);
-	
-	return out;
-	
+    ImageFloat data_dct, out;
+    int i, j;
+    int nx = in->ncol;
+    int ny = in->nrow;
+    float k;
+    
+    data_dct = compute_dct_image (in);
+    
+    for (i = fcy; i < ny; i++)
+        for (j = 0; j < nx; j++)
+            data_dct->val[i * nx + j] = 0;
+    
+    for (i = 0; i < ny; i++)
+        for (j = fcx; j < nx; j++)
+            data_dct->val[i * nx + j] = 0;
+    
+    
+    out = compute_idct_image (data_dct);
+    
+    /*Normalize image because DCT introduces
+     * a constant factor 4*nx*ny
+     */
+    k = 4 * nx * ny;
+    for (i = 0; i < nx * ny; i++)
+        out->val[i] = out->val[i] / k;
+    
+    
+    /*
+     * cleanup
+     */
+    free_imageFloat (data_dct);
+    
+    return out;
+    
 }
 
 /**
@@ -574,22 +574,22 @@ void evaluate_homography(float* H, float *Pin, float *Pout, int np)
 {
     int i;
     float xPo, yPo, zPo, xP, yP;
-	
-	
+    
+    
     for (i = 0; i < np; i++) {
-		/*Read the point */
-		xP = Pin[2 * i];
-		yP = Pin[2 * i + 1];
-		
-		/*Apply the homography to (xP,yP) */
-		xPo = H[0] * xP + H[1] * yP + H[2];
-		yPo = H[3] * xP + H[4] * yP + H[5];
-		zPo = H[6] * xP + H[7] * yP + H[8];
-		
-		Pout[2 * i] = xPo/zPo;
-		Pout[2 * i + 1] = yPo/zPo;
+        /*Read the point */
+        xP = Pin[2 * i];
+        yP = Pin[2 * i + 1];
+        
+        /*Apply the homography to (xP,yP) */
+        xPo = H[0] * xP + H[1] * yP + H[2];
+        yPo = H[3] * xP + H[4] * yP + H[5];
+        zPo = H[6] * xP + H[7] * yP + H[8];
+        
+        Pout[2 * i] = xPo/zPo;
+        Pout[2 * i + 1] = yPo/zPo;
     }
-	
+    
 }
 
 /** 
@@ -601,28 +601,28 @@ void evaluate_homography(float* H, float *Pin, float *Pout, int np)
  */
 void write_ascii_matrix(float *M, int ncol, int nrow, char *name)
 {
-	FILE *f;
-	int x, y, n;
-	
-	/* open file */
-	f = fopen (name, "w");
-	if (f == NULL)
-		error ("Can't open output file.");
-	
-	/* write header */
-	
-	/* write data */
-	for (y = 0; y < nrow; y++)
+    FILE *f;
+    int x, y, n;
+    
+    /* open file */
+    f = fopen (name, "w");
+    if (f == NULL)
+        error ("Can't open output file.");
+    
+    /* write header */
+    
+    /* write data */
+    for (y = 0; y < nrow; y++)
     {
-		for (x = 0; x < ncol; x++, n++)
-			fprintf (f, "%f ", M[y + x * nrow]);
-		
-		fprintf (f, "\n");
+        for (x = 0; x < ncol; x++, n++)
+            fprintf (f, "%f ", M[y + x * nrow]);
+        
+        fprintf (f, "\n");
     }
-	
-	
-	/* close file */
-	fclose (f);
+    
+    
+    /* close file */
+    fclose (f);
 }
 
 
@@ -633,32 +633,32 @@ void write_ascii_matrix(float *M, int ncol, int nrow, char *name)
  */
 void write_ascii_imageFloat (ImageFloat image, char *name)
 {
-	FILE *f;
-	int x, y, n;
-	
-	
-	/* open file */
-	f = fopen (name, "w");
-	if (f == NULL)
+    FILE *f;
+    int x, y, n;
+    
+    
+    /* open file */
+    f = fopen (name, "w");
+    if (f == NULL)
     {
-		error ("Can't open output file.");
+        error ("Can't open output file.");
     }
-	
-	/* write header */
-	
-	/* write data */
-	for (y = 0; y < image->nrow; y++)
+    
+    /* write header */
+    
+    /* write data */
+    for (y = 0; y < image->nrow; y++)
     {
-		for (x = 0; x < image->ncol; x++, n++){
-			
-			fprintf (f, "%f ", image->val[x + y * image->ncol]);
-		}
-		
-		fprintf (f,"\n");
+        for (x = 0; x < image->ncol; x++, n++){
+            
+            fprintf (f, "%f ", image->val[x + y * image->ncol]);
+        }
+        
+        fprintf (f,"\n");
     }
-	
-	/* close file */
-	fclose (f);
+    
+    /* close file */
+    fclose (f);
 }
 
 

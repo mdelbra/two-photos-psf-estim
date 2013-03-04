@@ -50,8 +50,8 @@
 
 static void errorf(const char * msg, const char *name)
 {
-	fprintf(stderr,"%s %s.\n",msg,name);
-	exit(EXIT_FAILURE);
+    fprintf(stderr,"%s %s.\n",msg,name);
+    exit(EXIT_FAILURE);
 }
 
 
@@ -65,17 +65,17 @@ static void errorf(const char * msg, const char *name)
  */
 static void skip_whites_and_comments(FILE * f)
 {
-	int c;
-	do
+    int c;
+    do
     {
-		while(isspace(c=getc(f))); /* skip spaces */
-		if(c=='#') /* skip comments */
-			while( c!='\n' && c!='\r' && c!=EOF )
-				c=getc(f);
+        while(isspace(c=getc(f))); /* skip spaces */
+        if(c=='#') /* skip comments */
+            while( c!='\n' && c!='\r' && c!=EOF )
+                c=getc(f);
     }
-	while( c == '#' || isspace(c) );
-	if( c != EOF && ungetc(c,f) == EOF )
-		error("Error: unable to 'ungetc' while reading PGM file.");
+    while( c == '#' || isspace(c) );
+    if( c != EOF && ungetc(c,f) == EOF )
+        error("Error: unable to 'ungetc' while reading PGM file.");
 }
 
 /*----------------------------------------------------------------------------*/
@@ -83,17 +83,17 @@ static void skip_whites_and_comments(FILE * f)
  */
 static unsigned int get_num(FILE * f)
 {
-	unsigned int num;
-	int c;
-	
-	while(isspace(c=getc(f)));
-	if(!isdigit(c)) error("Error: corrupted PGM file.");
-	num = (unsigned int) (c - '0');
-	while( isdigit(c=getc(f)) ) num = 10 * num + c - '0';
-	if( c != EOF && ungetc(c,f) == EOF )
-		error("Error: unable to 'ungetc' while reading PGM file.");
-	
-	return num;
+    unsigned int num;
+    int c;
+    
+    while(isspace(c=getc(f)));
+    if(!isdigit(c)) error("Error: corrupted PGM file.");
+    num = (unsigned int) (c - '0');
+    while( isdigit(c=getc(f)) ) num = 10 * num + c - '0';
+    if( c != EOF && ungetc(c,f) == EOF )
+        error("Error: unable to 'ungetc' while reading PGM file.");
+    
+    return num;
 }
 
 
@@ -212,38 +212,38 @@ void write_pgm_float(const char *fname, const float *data, int ncol, int nrow)
  the floats array to be 255. 
  */
 void write_pgm_normalize_given_minmax_float(const char *fname, 
-											const float *data, int ncol,
-											int nrow, float min,
-											float max)
+                                            const float *data, int ncol,
+                                            int nrow, float min,
+                                            float max)
 {
-	FILE * f;
-	int i,j;
-	
-	if(max==min)
-		errorf(
+    FILE * f;
+    int i,j;
+    
+    if(max==min)
+        errorf(
         "Error: unable to normalize to max and min values. They are equal",
                fname);
-	
-	/* open file */
-	if( strcmp(fname,"-") == 0 ) f = stdout;
-	else f = fopen(fname,"w");
-	if( f == NULL ) errorf("Error: unable to open output image file ",fname);
-	
-	/* write header */
-	fprintf(f,"P5\n");
-	fprintf(f,"%u %u\n",ncol,nrow);
-	fprintf(f,"%d\n",255);
-	
-	/* write data */
-	for(i=0; i<nrow; i++)
-		for(j=0; j<ncol; j++)
-		{
-			fputc((unsigned char) (data[j+i*ncol]-min>0) ?
+    
+    /* open file */
+    if( strcmp(fname,"-") == 0 ) f = stdout;
+    else f = fopen(fname,"w");
+    if( f == NULL ) errorf("Error: unable to open output image file ",fname);
+    
+    /* write header */
+    fprintf(f,"P5\n");
+    fprintf(f,"%u %u\n",ncol,nrow);
+    fprintf(f,"%d\n",255);
+    
+    /* write data */
+    for(i=0; i<nrow; i++)
+        for(j=0; j<ncol; j++)
+        {
+            fputc((unsigned char) (data[j+i*ncol]-min>0) ?
                   255.0/(max-min)*(data[j+i*ncol]-min) : 0 ,f);
-		}
-	/* close file if needed */
-	if( f != stdout && fclose(f) == EOF )
-		errorf("Error: unable to close file while writing PGM file ",fname);
+        }
+    /* close file if needed */
+    if( f != stdout && fclose(f) == EOF )
+        errorf("Error: unable to close file while writing PGM file ",fname);
 }
 
 

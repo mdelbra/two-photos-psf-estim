@@ -37,4 +37,4 @@ void two_photos_psf_estim (float *img1, int nx1, int ny1,
                            int threshold, char *outprefix);
 
 
-#endif				/* TWO_PHOTOS_PSF_ESTIM_H_ */
+#endif                /* TWO_PHOTOS_PSF_ESTIM_H_ */

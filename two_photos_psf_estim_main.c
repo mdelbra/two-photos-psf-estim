@@ -40,79 +40,79 @@
 /** @brief struct of program parameters */
 typedef struct
 {
-	int s;
-	int psf_nx;
-	int psf_ny;
-	char *img_zin;
-	char *out_psf_pgm;
-	char *out_intk_pgm;
-	char *img_zout;
-	char *output_psf;
-	char *output_intk;
-	char *outprefix;
-	int threshold;
+    int s;
+    int psf_nx;
+    int psf_ny;
+    char *img_zin;
+    char *out_psf_pgm;
+    char *out_intk_pgm;
+    char *img_zout;
+    char *output_psf;
+    char *output_intk;
+    char *outprefix;
+    int threshold;
 } program_argums;
 
 
 
 static void usage(const char* name)
 {
-	printf("Recovering the Subpixel PSF from Two Photographs ");
+    printf("Recovering the Subpixel PSF from Two Photographs ");
     printf("at Different Distances\n");
-	printf("Copyright M.Delbracio, A.Almansa, P.Muse. ");
+    printf("Copyright M.Delbracio, A.Almansa, P.Muse. ");
     printf("Version 1.0 Feb 22, 2013\n\n");
-	printf("Usage: %s [options] <input file 1> <input file 2> <output PSF txt> ", name);
+    printf("Usage: %s [options] <input file 1> <input file 2> <output PSF txt> ", name);
     printf("<output inter-kernel txt>\n\n");
     printf("Only  PGM 16/8 bits images are supported.\n\n");
-	printf("Options:\n");
-	printf("   -s <number>   Super-resolution factor ");
+    printf("Options:\n");
+    printf("   -s <number>   Super-resolution factor ");
     printf("(positive integer, default 3)\n");
-	printf("   -k <number>   PSF support size (default 13)\n");
-	printf("   -o <file>     Estimated PSF save to a 8bits PGM image \n");
-	printf("   -i <file>     Estimated inter-image kernel save ");
+    printf("   -k <number>   PSF support size (default 13)\n");
+    printf("   -o <file>     Estimated PSF save to a 8bits PGM image \n");
+    printf("   -i <file>     Estimated inter-image kernel save ");
     printf("to a 8bits PGM image \n");
-	printf("   -d <file>     Save all the intermediate images in ");
+    printf("   -d <file>     Save all the intermediate images in ");
     printf("files with prefix <file>\n");
-	printf("   -t 0,1        1 - Threshold negative values to zero (0-default)\n");
+    printf("   -t 0,1        1 - Threshold negative values to zero (0-default)\n");
 }
 
 static int parse_arguments(program_argums *param, int argc, char *argv[])
 {
-	char *OptionString;
-	char OptionChar;
-	int i;
-	
-	
-	if(argc < 5)
-	{
-		usage(argv[0]);
-		return 0;
-	}
-	
-	/* Set parameter defaults */	
-	param->s = 3;
-	param->psf_nx = 13;
-	param->psf_ny = 13;
-	param->threshold = 0;
-	param->img_zin = NULL;
-	param->img_zout = NULL;
-	param->output_psf = NULL;
-	param->output_intk = NULL;
-	param->outprefix = NULL;
-	param->out_psf_pgm = NULL;
-	param->out_intk_pgm = NULL;
-	
-	
-	for(i = 1; i < argc;)
-	{
-		if(argv[i] && argv[i][0] == '-')
-		{
+    char *OptionString;
+    char OptionChar;
+    int i;
+    
+    
+    if(argc < 5)
+    {
+        usage(argv[0]);
+        return 0;
+    }
+    
+    /* Set parameter defaults */    
+    param->s = 3;
+    param->psf_nx = 13;
+    param->psf_ny = 13;
+    param->threshold = 0;
+    param->img_zin = NULL;
+    param->img_zout = NULL;
+    param->output_psf = NULL;
+    param->output_intk = NULL;
+    param->outprefix = NULL;
+    param->out_psf_pgm = NULL;
+    param->out_intk_pgm = NULL;
+    
+    
+    for(i = 1; i < argc;)
+    {
+        if(argv[i] && argv[i][0] == '-')
+        {
             /*Read options that do not need extra arguments*/
-			if((OptionChar = argv[i][1]) == 0)
-			{
-				printf("Invalid parameter format.\n");
-				return 0;
-			}
+            if((OptionChar = argv[i][1]) == 0)
+            {
+                printf("Invalid parameter format.\n");
+                return 0;
+            }
             
             
             if(argv[i][2])
@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
     write_ascii_matrix(k, param.psf_nx,
                        param.psf_ny, param.output_intk);
     
-	
+    
     /* Write the estimated PSF to a 8bit-PGM image file if 
      required
      */

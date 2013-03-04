@@ -226,7 +226,7 @@ void solve_lsd(float *Af, float *bf, float *x, int n, int m)
 
     double lwork;
     int iwork[BUFFER_SIZE];
-    int rank, info;
+    int rank;
 
     double *A, *b;
 
@@ -245,11 +245,10 @@ void solve_lsd(float *Af, float *bf, float *x, int n, int m)
     s = (double *) malloc(n * sizeof(double));
 
     /*Do a query to know the optimum BufferSize */
-    info =
     dgelsd(m, n, 1, A, m, b, m, s, EPS_ZERO, &rank, &lwork, -1, iwork);
 
     work = (double *) malloc(lwork * sizeof(double));
-    info =
+    
     dgelsd(m, n, 1, A, m, b, m, s, EPS_ZERO, &rank, work, (int) lwork,
            iwork);
 
